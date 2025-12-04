@@ -19,7 +19,7 @@
 		</Item>
 		<Item Name="server" Type="Folder">
 			<Item Name="Server.vi" Type="VI" URL="../server/Server.vi"/>
-			<Item Name="ServerGlobalVariables.vi" Type="VI" URL="../ServerGlobalVariables.vi"/>
+			<Item Name="ServerGlobalVariables.vi" Type="VI" URL="../server/ServerGlobalVariables.vi"/>
 			<Item Name="ServerNetworkInterface.vi" Type="VI" URL="../server/ServerNetworkInterface.vi"/>
 			<Item Name="ServerNetworkInterfaceGlobalVariables.vi" Type="VI" URL="../server/ServerNetworkInterfaceGlobalVariables.vi"/>
 		</Item>
