@@ -25,6 +25,7 @@
 		</Item>
 		<Item Name="tests" Type="Folder">
 			<Item Name="PlayerJoinTest.vi" Type="VI" URL="../tests/PlayerJoinTest.vi"/>
+			<Item Name="PlayerLeaveTest.vi" Type="VI" URL="../tests/PlayerLeaveTest.vi"/>
 		</Item>
 		<Item Name="Dependencies" Type="Dependencies"/>
 		<Item Name="Build Specifications" Type="Build"/>
