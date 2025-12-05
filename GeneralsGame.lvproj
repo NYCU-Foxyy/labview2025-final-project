@@ -16,6 +16,7 @@
 		<Item Name="common" Type="Folder">
 			<Item Name="ClientNetworkInterface.vi" Type="VI" URL="../common/ClientNetworkInterface.vi"/>
 			<Item Name="ClientNetworkInterfaceGlobalVariables.vi" Type="VI" URL="../common/ClientNetworkInterfaceGlobalVariables.vi"/>
+			<Item Name="IsValidCoordinate.vi" Type="VI" URL="../common/IsValidCoordinate.vi"/>
 		</Item>
 		<Item Name="server" Type="Folder">
 			<Item Name="Server.vi" Type="VI" URL="../server/Server.vi"/>
