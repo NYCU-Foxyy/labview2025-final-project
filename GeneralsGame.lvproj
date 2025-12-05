@@ -16,15 +16,20 @@
 		<Item Name="common" Type="Folder">
 			<Item Name="ClientNetworkInterface.vi" Type="VI" URL="../common/ClientNetworkInterface.vi"/>
 			<Item Name="ClientNetworkInterfaceGlobalVariables.vi" Type="VI" URL="../common/ClientNetworkInterfaceGlobalVariables.vi"/>
+			<Item Name="IsValidCoordinate.vi" Type="VI" URL="../common/IsValidCoordinate.vi"/>
 		</Item>
 		<Item Name="server" Type="Folder">
 			<Item Name="Server.vi" Type="VI" URL="../server/Server.vi"/>
-			<Item Name="ServerGlobalVariables.vi" Type="VI" URL="../ServerGlobalVariables.vi"/>
+			<Item Name="ServerGlobalVariables.vi" Type="VI" URL="../server/ServerGlobalVariables.vi"/>
 			<Item Name="ServerNetworkInterface.vi" Type="VI" URL="../server/ServerNetworkInterface.vi"/>
 			<Item Name="ServerNetworkInterfaceGlobalVariables.vi" Type="VI" URL="../server/ServerNetworkInterfaceGlobalVariables.vi"/>
 		</Item>
 		<Item Name="tests" Type="Folder">
 			<Item Name="PlayerJoinTest.vi" Type="VI" URL="../tests/PlayerJoinTest.vi"/>
+			<Item Name="PlayerLeaveTest.vi" Type="VI" URL="../tests/PlayerLeaveTest.vi"/>
+			<Item Name="SetOptionTest.vi" Type="VI" URL="../tests/SetOptionTest.vi"/>
+			<Item Name="SetReadyTest.vi" Type="VI" URL="../tests/SetReadyTest.vi"/>
+			<Item Name="SetTeamTest.vi" Type="VI" URL="../tests/SetTeamTest.vi"/>
 		</Item>
 		<Item Name="Dependencies" Type="Dependencies"/>
 		<Item Name="Build Specifications" Type="Build"/>
