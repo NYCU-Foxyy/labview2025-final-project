@@ -12,7 +12,10 @@
 		<Property Name="server.vi.callsEnabled" Type="Bool">true</Property>
 		<Property Name="server.vi.propertiesEnabled" Type="Bool">true</Property>
 		<Property Name="specify.custom.address" Type="Bool">false</Property>
-		<Item Name="client" Type="Folder"/>
+		<Item Name="client" Type="Folder">
+			<Item Name="drawsquare.vi" Type="VI" URL="../client/drawsquare.vi"/>
+			<Item Name="pregame.vi" Type="VI" URL="../client/pregame.vi"/>
+		</Item>
 		<Item Name="common" Type="Folder">
 			<Item Name="ClientNetworkInterface.vi" Type="VI" URL="../common/ClientNetworkInterface.vi"/>
 			<Item Name="ClientNetworkInterfaceGlobalVariables.vi" Type="VI" URL="../common/ClientNetworkInterfaceGlobalVariables.vi"/>
