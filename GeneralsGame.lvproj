@@ -22,10 +22,11 @@
 			</Item>
 			<Item Name="ClientNetworkInterface.vi" Type="VI" URL="../common/ClientNetworkInterface.vi"/>
 			<Item Name="ClientNetworkInterfaceGlobalVariables.vi" Type="VI" URL="../common/ClientNetworkInterfaceGlobalVariables.vi"/>
-			<Item Name="IsValidCoordinate.vi" Type="VI" URL="../common/IsValidCoordinate.vi"/>
 		</Item>
 		<Item Name="server" Type="Folder">
 			<Item Name="DataBroadcaster.vi" Type="VI" URL="../server/DataBroadcaster.vi"/>
+			<Item Name="FieldBroadcaster.vi" Type="VI" URL="../server/FieldBroadcaster.vi"/>
+			<Item Name="IsValidCoordinate.vi" Type="VI" URL="../server/IsValidCoordinate.vi"/>
 			<Item Name="Server.vi" Type="VI" URL="../server/Server.vi"/>
 			<Item Name="ServerGlobalVariables.vi" Type="VI" URL="../server/ServerGlobalVariables.vi"/>
 			<Item Name="ServerNetworkInterface.vi" Type="VI" URL="../server/ServerNetworkInterface.vi"/>
