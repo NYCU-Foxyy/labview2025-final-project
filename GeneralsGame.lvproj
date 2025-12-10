@@ -17,11 +17,15 @@
 			<Item Name="pregame.vi" Type="VI" URL="../client/pregame.vi"/>
 		</Item>
 		<Item Name="common" Type="Folder">
+			<Item Name="types" Type="Folder">
+				<Item Name="LobbyPlayerInfoArray.ctl" Type="VI" URL="../common/types/LobbyPlayerInfoArray.ctl"/>
+			</Item>
 			<Item Name="ClientNetworkInterface.vi" Type="VI" URL="../common/ClientNetworkInterface.vi"/>
 			<Item Name="ClientNetworkInterfaceGlobalVariables.vi" Type="VI" URL="../common/ClientNetworkInterfaceGlobalVariables.vi"/>
 			<Item Name="IsValidCoordinate.vi" Type="VI" URL="../common/IsValidCoordinate.vi"/>
 		</Item>
 		<Item Name="server" Type="Folder">
+			<Item Name="DataBroadcaster.vi" Type="VI" URL="../server/DataBroadcaster.vi"/>
 			<Item Name="Server.vi" Type="VI" URL="../server/Server.vi"/>
 			<Item Name="ServerGlobalVariables.vi" Type="VI" URL="../server/ServerGlobalVariables.vi"/>
 			<Item Name="ServerNetworkInterface.vi" Type="VI" URL="../server/ServerNetworkInterface.vi"/>
@@ -34,8 +38,6 @@
 			<Item Name="SetReadyTest.vi" Type="VI" URL="../tests/SetReadyTest.vi"/>
 			<Item Name="SetTeamTest.vi" Type="VI" URL="../tests/SetTeamTest.vi"/>
 		</Item>
-		<Item Name="DataBroadcaster.vi" Type="VI" URL="../server/DataBroadcaster.vi"/>
-		<Item Name="LobbyPlayerInfoArray.ctl" Type="VI" URL="../common/types/LobbyPlayerInfoArray.ctl"/>
 		<Item Name="Dependencies" Type="Dependencies"/>
 		<Item Name="Build Specifications" Type="Build"/>
 	</Item>
