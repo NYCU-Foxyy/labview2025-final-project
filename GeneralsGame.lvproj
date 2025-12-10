@@ -18,6 +18,7 @@
 		</Item>
 		<Item Name="common" Type="Folder">
 			<Item Name="types" Type="Folder">
+				<Item Name="CommandCluster.ctl" Type="VI" URL="../common/types/CommandCluster.ctl"/>
 				<Item Name="LobbyPlayerInfoArray.ctl" Type="VI" URL="../common/types/LobbyPlayerInfoArray.ctl"/>
 			</Item>
 			<Item Name="ClientNetworkInterface.vi" Type="VI" URL="../common/ClientNetworkInterface.vi"/>
@@ -39,6 +40,7 @@
 			<Item Name="SetReadyTest.vi" Type="VI" URL="../tests/SetReadyTest.vi"/>
 			<Item Name="SetTeamTest.vi" Type="VI" URL="../tests/SetTeamTest.vi"/>
 		</Item>
+		<Item Name="LobbyBroadcaster.vi" Type="VI" URL="../server/LobbyBroadcaster.vi"/>
 		<Item Name="Dependencies" Type="Dependencies"/>
 		<Item Name="Build Specifications" Type="Build"/>
 	</Item>
