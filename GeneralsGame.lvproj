@@ -41,7 +41,6 @@
 			<Item Name="SetReadyTest.vi" Type="VI" URL="../tests/SetReadyTest.vi"/>
 			<Item Name="SetTeamTest.vi" Type="VI" URL="../tests/SetTeamTest.vi"/>
 		</Item>
-		<Item Name="LobbyBroadcaster.vi" Type="VI" URL="../server/LobbyBroadcaster.vi"/>
 		<Item Name="Dependencies" Type="Dependencies"/>
 		<Item Name="Build Specifications" Type="Build"/>
 	</Item>
