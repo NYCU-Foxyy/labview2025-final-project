@@ -13,8 +13,10 @@
 		<Property Name="server.vi.propertiesEnabled" Type="Bool">true</Property>
 		<Property Name="specify.custom.address" Type="Bool">false</Property>
 		<Item Name="client" Type="Folder">
+			<Item Name="ActionDataCluster.ctl" Type="VI" URL="../client/ActionDataCluster.ctl"/>
 			<Item Name="drawsquare.vi" Type="VI" URL="../client/drawsquare.vi"/>
 			<Item Name="pregame.vi" Type="VI" URL="../client/pregame.vi"/>
+			<Item Name="Resize.llb" Type="Document" URL="../client/Resize.llb"/>
 		</Item>
 		<Item Name="common" Type="Folder">
 			<Item Name="types" Type="Folder">
@@ -28,7 +30,6 @@
 			<Item Name="DataBroadcaster.vi" Type="VI" URL="../server/DataBroadcaster.vi"/>
 			<Item Name="FieldBroadcaster.vi" Type="VI" URL="../server/FieldBroadcaster.vi"/>
 			<Item Name="IsValidCoordinate.vi" Type="VI" URL="../server/IsValidCoordinate.vi"/>
-			<Item Name="LobbyBroadcaster.vi" Type="VI" URL="../server/LobbyBroadcaster.vi"/>
 			<Item Name="Server.vi" Type="VI" URL="../server/Server.vi"/>
 			<Item Name="ServerGlobalVariables.vi" Type="VI" URL="../server/ServerGlobalVariables.vi"/>
 			<Item Name="ServerNetworkInterface.vi" Type="VI" URL="../server/ServerNetworkInterface.vi"/>
