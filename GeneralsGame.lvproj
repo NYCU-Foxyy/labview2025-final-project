@@ -26,6 +26,9 @@
 			<Item Name="ClientNetworkInterface.vi" Type="VI" URL="../common/ClientNetworkInterface.vi"/>
 			<Item Name="ClientNetworkInterfaceGlobalVariables.vi" Type="VI" URL="../common/ClientNetworkInterfaceGlobalVariables.vi"/>
 		</Item>
+		<Item Name="img" Type="Folder" URL="../img">
+			<Property Name="NI.DISK" Type="Bool">true</Property>
+		</Item>
 		<Item Name="server" Type="Folder">
 			<Item Name="DataBroadcaster.vi" Type="VI" URL="../server/DataBroadcaster.vi"/>
 			<Item Name="FieldBroadcaster.vi" Type="VI" URL="../server/FieldBroadcaster.vi"/>
