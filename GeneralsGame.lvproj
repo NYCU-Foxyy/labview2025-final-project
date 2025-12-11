@@ -21,7 +21,7 @@
 		<Item Name="common" Type="Folder">
 			<Item Name="types" Type="Folder">
 				<Item Name="CommandCluster.ctl" Type="VI" URL="../common/types/CommandCluster.ctl"/>
-				<Item Name="LobbyPlayerInfoArray.ctl" Type="VI" URL="../common/types/LobbyPlayerInfoArray.ctl"/>
+				<Item Name="PlayerInfoArray.ctl" Type="VI" URL="../common/types/PlayerInfoArray.ctl"/>
 			</Item>
 			<Item Name="ClientNetworkInterface.vi" Type="VI" URL="../common/ClientNetworkInterface.vi"/>
 			<Item Name="ClientNetworkInterfaceGlobalVariables.vi" Type="VI" URL="../common/ClientNetworkInterfaceGlobalVariables.vi"/>
@@ -33,6 +33,7 @@
 			<Item Name="DataBroadcaster.vi" Type="VI" URL="../server/DataBroadcaster.vi"/>
 			<Item Name="FieldBroadcaster.vi" Type="VI" URL="../server/FieldBroadcaster.vi"/>
 			<Item Name="IsValidCoordinate.vi" Type="VI" URL="../server/IsValidCoordinate.vi"/>
+			<Item Name="PlayerInfoBroadcaster.vi" Type="VI" URL="../server/PlayerInfoBroadcaster.vi"/>
 			<Item Name="Server.vi" Type="VI" URL="../server/Server.vi"/>
 			<Item Name="ServerGlobalVariables.vi" Type="VI" URL="../server/ServerGlobalVariables.vi"/>
 			<Item Name="ServerNetworkInterface.vi" Type="VI" URL="../server/ServerNetworkInterface.vi"/>
