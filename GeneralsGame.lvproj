@@ -40,6 +40,7 @@
 			<Item Name="ServerNetworkInterfaceGlobalVariables.vi" Type="VI" URL="../server/ServerNetworkInterfaceGlobalVariables.vi"/>
 		</Item>
 		<Item Name="tests" Type="Folder">
+			<Item Name="DrawPNGTest.vi" Type="VI" URL="../tests/DrawPNGTest.vi"/>
 			<Item Name="PlayerJoinTest.vi" Type="VI" URL="../tests/PlayerJoinTest.vi"/>
 			<Item Name="PlayerLeaveTest.vi" Type="VI" URL="../tests/PlayerLeaveTest.vi"/>
 			<Item Name="SetOptionTest.vi" Type="VI" URL="../tests/SetOptionTest.vi"/>
