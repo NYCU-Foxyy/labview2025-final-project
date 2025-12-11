@@ -25,25 +25,28 @@ from torch.utils.tensorboard import SummaryWriter
 # ---------------------------
 # Config
 # ---------------------------
-MAP_SIZE = 10
+MAP_SIZE = 20
 NUM_PLAYERS = 2
-EPISODES = 200
-SNAPSHOT_INTERVAL = 20
+EPISODES = 400
+SNAPSHOT_INTERVAL = 10
 OPP_SAMPLE_FROM_SNAPSHOTS_PCT = 0.8
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 SEED = 42
 random.seed(SEED); np.random.seed(SEED); torch.manual_seed(SEED)
 
-# Map encoding:
-# -2 : mountain
-# -1 : fog (only for predictor inference)
-# 0  : neutral
-# 1..N : player-owned tile
-# 11,12,... : regular base for player1, player2 -> base on tile encoded as owner + 10
-# 101,102,... : castle (main base) for player1, player2 -> castle on tile encoded as owner + 100
+# Map encoding (State Matrix - Owner/Terrain):
+# 0  : Plains (uncaptured/neutral terrain)
+# -1 : Mountains (impassable)
+# -2 : Fog (hidden tiles, only for predictor inference)
+# 1..N : player-owned plains
+# 100 : Uncaptured city
+# 100+player : Captured city (101=player1 city, 102=player2 city, etc.)
+# 200+player : General/Castle (201=player1 general, 202=player2 general, etc.)
+# Army Matrix: separate array with troop counts for each cell
 
-BASE_OFFSET = 100  # Main castle offset
-REGULAR_BASE_OFFSET = 10  # Regular base offset
+GENERAL_OFFSET = 200  # General (main base) offset
+CITY_OFFSET = 100     # City offset
+UNCAPTURED_CITY = 100 # Uncaptured city value
 
 # ---------------------------
 # Helper: directions
@@ -71,7 +74,7 @@ class GeneralIOEnv:
         H = self.map_size
         W = self.map_size
         # owner grid (ints)
-        self.owner = np.zeros((H,W), dtype=np.int32)  # -2 mountains, 0 neutral, 1.. players, 11.. bases
+        self.owner = np.zeros((H,W), dtype=np.int32)  # -1 mountains, 0 plains, 1.. players, 100 cities, 200+ generals
         self.armies = np.zeros((H,W), dtype=np.int32) # army counts
         self.turn = 0
 
@@ -79,7 +82,7 @@ class GeneralIOEnv:
         num_mnts = (H*W)//20
         for _ in range(num_mnts):
             y,x = np.random.randint(0,H), np.random.randint(0,W)
-            self.owner[y,x] = -2
+            self.owner[y,x] = -1
 
         # place castles (main bases) randomly with minimum distance constraint
         min_distance = max(H, W) * 0.4  # at least 40% of map dimension apart
@@ -93,7 +96,7 @@ class GeneralIOEnv:
                 y, x = np.random.randint(0, H), np.random.randint(0, W)
                 
                 # check if position is valid (not mountain)
-                if self.owner[y,x] == -2:
+                if self.owner[y,x] == -1:
                     continue
                 
                 # check minimum distance from other castles
@@ -105,7 +108,7 @@ class GeneralIOEnv:
                         break
                 
                 if valid_position:
-                    self.owner[y,x] = p + BASE_OFFSET  # Castle (main base)
+                    self.owner[y,x] = p + GENERAL_OFFSET  # General (main base)
                     self.armies[y,x] = 5  # starting garrison
                     castle_positions.append((y, x))
                     placed = True
@@ -115,11 +118,23 @@ class GeneralIOEnv:
             if not placed:
                 corners = [(0,0),(0,W-1),(H-1,0),(H-1,W-1)]
                 y, x = corners[p-1]
-                if self.owner[y,x] == -2:
+                if self.owner[y,x] == -1:
                     self.owner[y,x] = 0
-                self.owner[y,x] = p + BASE_OFFSET
+                self.owner[y,x] = p + GENERAL_OFFSET
                 self.armies[y,x] = 5
                 castle_positions.append((y, x))
+
+        # place neutral cities (uncaptured)
+        num_cities = max(2, (H * W) // 80)  # roughly 5 cities on a 20x20 map
+        for _ in range(num_cities):
+            max_attempts = 50
+            for attempt in range(max_attempts):
+                y, x = np.random.randint(0, H), np.random.randint(0, W)
+                # place on empty plains tiles only
+                if self.owner[y, x] == 0:
+                    self.owner[y, x] = 100  # neutral city
+                    self.armies[y, x] = np.random.randint(30, 50)  # cities have strong garrison
+                    break
 
         # scatter some neutral troops on neutral tiles
         for _ in range((H*W)//15):
@@ -152,10 +167,11 @@ class GeneralIOEnv:
         # for network input we'll convert owner map to ints but DQN will expect a single 2D int map in example pipeline
         return {"owner": owner_copy, "armies": armies_copy, "player": player_id}
 
-    def step(self, player_action:int, player_id=1, opponent_policy=None):
+    def step(self, player_action, player_id=1, opponent_policy=None):
         """
-        player_action: integer 0..4 -> global movement direction applied to all owned tiles for that player
-        opponent_policy: callable(obs)->action for the opponent (we'll only support 1 opponent in demo)
+        player_action: tuple (tile_y, tile_x, direction) for per-tile action
+                      OR integer 0..4 for backward compatibility with global actions
+        opponent_policy: callable(obs)->action for the opponent
         Returns: next_obs, reward, done, info
         """
         self.turn += 1
@@ -163,27 +179,49 @@ class GeneralIOEnv:
 
         # store prev totals for reward
         prev_total_army = self.armies[self.owner == player_id].sum()
-        prev_bases = (self.owner == (player_id + BASE_OFFSET)).sum()
+        prev_bases = (self.owner == (player_id + GENERAL_OFFSET)).sum()
 
         # Apply player's movement
-        self._apply_global_move(player_id, player_action)
+        if isinstance(player_action, tuple) and len(player_action) == 3:
+            # Per-tile action: (y, x, direction)
+            self._apply_tile_move(player_id, player_action)
+        else:
+            # Global action for backward compatibility
+            self._apply_global_move(player_id, player_action)
 
         # Opponent(s) moves: for demo we handle single opponent player 2
         if self.num_players >= 2:
             if opponent_policy is None:
-                opp_action = random.randint(0, NUM_ACTIONS-1)
+                # Random per-tile action
+                owned_mask = (
+                    (self.owner == 2) | 
+                    (self.owner == 2 + CITY_OFFSET) | 
+                    (self.owner == 2 + GENERAL_OFFSET)
+                )
+                owned_positions = np.argwhere(owned_mask)
+                if len(owned_positions) > 0:
+                    idx = np.random.randint(0, len(owned_positions))
+                    tile_y, tile_x = owned_positions[idx]
+                    direction = random.randint(0, NUM_ACTIONS-1)
+                    opp_action = (int(tile_y), int(tile_x), direction)
+                else:
+                    opp_action = (0, 0, 0)
             else:
                 obs_for_opp = self._get_obs(player_id=2)
                 opp_action = opponent_policy(obs_for_opp)
-            self._apply_global_move(2, opp_action)
+            
+            # Apply opponent move (handle both tuple and int formats)
+            if isinstance(opp_action, tuple) and len(opp_action) == 3:
+                self._apply_tile_move(2, opp_action)
+            else:
+                self._apply_global_move(2, opp_action)
 
-        # produce at bases and castles: each base/castle adds 1 army
-        # Check for both castles (>=BASE_OFFSET) and regular bases (>=REGULAR_BASE_OFFSET)
-        castle_positions = np.argwhere(self.owner >= BASE_OFFSET)
-        regular_base_positions = np.argwhere((self.owner >= REGULAR_BASE_OFFSET) & (self.owner < BASE_OFFSET))
-        for (y,x) in castle_positions:
+        # produce at generals and cities: each general/city adds 1 army
+        general_positions = np.argwhere(self.owner >= GENERAL_OFFSET)
+        city_positions = np.argwhere((self.owner >= CITY_OFFSET) & (self.owner < GENERAL_OFFSET))
+        for (y,x) in general_positions:
             self.armies[y,x] += 1
-        for (y,x) in regular_base_positions:
+        for (y,x) in city_positions:
             self.armies[y,x] += 1
 
         # clamp armies
@@ -193,9 +231,9 @@ class GeneralIOEnv:
         my_total_army = self.armies[self.owner == player_id].sum()
         delta_army = int(my_total_army - prev_total_army)
 
-        my_castles = (self.owner == (player_id + BASE_OFFSET)).sum()
-        my_bases = ((self.owner >= (player_id + REGULAR_BASE_OFFSET)) & (self.owner < (player_id + BASE_OFFSET))).sum()
-        total_bases = my_castles + my_bases
+        my_general = (self.owner == (player_id + GENERAL_OFFSET)).sum()
+        my_cities = ((self.owner >= (player_id + CITY_OFFSET)) & (self.owner < (player_id + GENERAL_OFFSET))).sum()
+        total_bases = my_general + my_cities
         base_gain = int(total_bases - prev_bases)
         reward = float(delta_army) + 5.0 * float(base_gain)
 
@@ -203,14 +241,82 @@ class GeneralIOEnv:
         done = False
         if self.turn >= self.max_steps:
             done = True
-        # if captured opponent's castle -> win
-        opponent_castle = (self.owner == (2 + BASE_OFFSET)).sum()
-        if opponent_castle == 0:
+        # if captured opponent's general -> win
+        opponent_general = (self.owner == (2 + GENERAL_OFFSET)).sum()
+        if opponent_general == 0:
             done = True
             reward += 10.0
 
         info = {}
         return self._get_obs(player_id=player_id), reward, done, info
+
+    def _apply_tile_move(self, player_id, action_tuple):
+        """
+        Move armies from a specific tile in a specific direction.
+        action_tuple: (tile_y, tile_x, direction)
+        """
+        tile_y, tile_x, direction = action_tuple
+        H, W = self.map_size, self.map_size
+        dy, dx = DIRS[direction]
+        move_frac = 0.5  # move 50% of armies from the selected tile
+        
+        # Check if tile is owned by player
+        is_owned = (
+            (self.owner[tile_y, tile_x] == player_id) or
+            (self.owner[tile_y, tile_x] == player_id + CITY_OFFSET) or
+            (self.owner[tile_y, tile_x] == player_id + GENERAL_OFFSET)
+        )
+        
+        if not is_owned:
+            return  # Can't move from unowned tile
+        
+        # Calculate movement
+        avail = int(self.armies[tile_y, tile_x])
+        moving = max(1, int(avail * move_frac))  # Move at least 1 if available
+        if moving <= 0 or avail < 2:  # Need at least 2 armies to move (leave 1 behind)
+            return
+        
+        # Calculate destination
+        ny = np.clip(tile_y + dy, 0, H-1)
+        nx = np.clip(tile_x + dx, 0, W-1)
+        
+        # If trying to move into mountain or out of bounds, do nothing
+        if self.owner[ny, nx] == -1:
+            return
+        
+        # Reduce armies at source
+        self.armies[tile_y, tile_x] = max(0, self.armies[tile_y, tile_x] - moving)
+        
+        # Check if destination is owned by player
+        dest_is_mine = (
+            (self.owner[ny, nx] == player_id) or
+            (self.owner[ny, nx] == player_id + CITY_OFFSET) or
+            (self.owner[ny, nx] == player_id + GENERAL_OFFSET)
+        )
+        
+        if self.owner[ny, nx] == 0 or dest_is_mine:
+            # Empty or friendly: just add armies
+            self.armies[ny, nx] += moving
+            if self.owner[ny, nx] == 0:
+                self.owner[ny, nx] = player_id
+        else:
+            # Combat with enemy/neutral
+            defender_owner = self.owner[ny, nx]
+            defender_army = int(self.armies[ny, nx])
+            
+            if moving > defender_army:
+                # Capture
+                remaining = moving - defender_army
+                if defender_owner >= GENERAL_OFFSET:
+                    self.owner[ny, nx] = player_id + GENERAL_OFFSET
+                elif defender_owner >= CITY_OFFSET or defender_owner == 100:
+                    self.owner[ny, nx] = player_id + CITY_OFFSET
+                else:
+                    self.owner[ny, nx] = player_id
+                self.armies[ny, nx] = remaining
+            else:
+                # Defender holds
+                self.armies[ny, nx] = defender_army - moving
 
     def _apply_global_move(self, player_id, action):
         """
@@ -225,10 +331,10 @@ class GeneralIOEnv:
         # we'll accumulate incoming troops into a temp grid
         incoming = np.zeros_like(self.armies, dtype=np.int32)
 
-        # iterate all tiles owned by player (including castles, regular bases, and regular owned tiles)
+        # iterate all tiles owned by player (including generals, cities, and regular owned tiles)
         owned_mask = ( (self.owner == player_id) | 
-                      (self.owner == player_id + REGULAR_BASE_OFFSET) | 
-                      (self.owner == player_id + BASE_OFFSET) )
+                      (self.owner == player_id + CITY_OFFSET) | 
+                      (self.owner == player_id + GENERAL_OFFSET) )
         ys, xs = np.where(owned_mask)
         for y,x in zip(ys,xs):
             # compute how many move
@@ -241,13 +347,13 @@ class GeneralIOEnv:
             ny = np.clip(y + dy, 0, H-1)
             nx = np.clip(x + dx, 0, W-1)
             # if mountain, troops can't move; return to origin
-            if self.owner[ny,nx] == -2:
+            if self.owner[ny,nx] == -1:
                 self.armies[y,x] += moving
                 continue
             # if empty or same owner -> add to incoming
             is_mine = (self.owner[ny,nx] == player_id) or \
-                      (self.owner[ny,nx] == player_id + REGULAR_BASE_OFFSET) or \
-                      (self.owner[ny,nx] == player_id + BASE_OFFSET)
+                      (self.owner[ny,nx] == player_id + CITY_OFFSET) or \
+                      (self.owner[ny,nx] == player_id + GENERAL_OFFSET)
             if (self.owner[ny,nx] == 0) or is_mine:
                 incoming[ny,nx] += moving
             else:
@@ -257,13 +363,13 @@ class GeneralIOEnv:
                 if moving > defender_army:
                     # capture tile: remaining armies occupy, owner switches
                     remaining = moving - defender_army
-                    # if defender was a castle, convert to your castle
-                    if defender_owner >= BASE_OFFSET:
-                        # capturing enemy castle -> become your castle
-                        self.owner[ny,nx] = player_id + BASE_OFFSET
-                    elif defender_owner >= REGULAR_BASE_OFFSET:
-                        # capturing regular base -> become your regular base
-                        self.owner[ny,nx] = player_id + REGULAR_BASE_OFFSET
+                    # if defender was a general, convert to your general
+                    if defender_owner >= GENERAL_OFFSET:
+                        # capturing enemy general -> become your general
+                        self.owner[ny,nx] = player_id + GENERAL_OFFSET
+                    elif defender_owner >= CITY_OFFSET or defender_owner == 100:
+                        # capturing city (enemy, neutral, or uncaptured) -> become your city
+                        self.owner[ny,nx] = player_id + CITY_OFFSET
                     else:
                         self.owner[ny,nx] = player_id
                     self.armies[ny,nx] = remaining
@@ -293,21 +399,19 @@ class GeneralIOEnv:
 class TinyQNet(nn.Module):
     def __init__(self, H, W, num_actions=NUM_ACTIONS):
         super().__init__()
+        self.H = H
+        self.W = W
+        self.num_actions = num_actions
         self.conv = nn.Sequential(
             nn.Conv2d(2, 32, 3, padding=1), nn.ReLU(),
             nn.Conv2d(32, 64, 3, padding=1), nn.ReLU(),
-        )
-        conv_out = 64 * H * W
-        self.fc = nn.Sequential(
-            nn.Linear(conv_out, 256), nn.ReLU(),
-            nn.Linear(256, num_actions)
+            nn.Conv2d(64, num_actions, 1),  # Output: (B, num_actions, H, W)
         )
 
     def forward(self, x):
         # x shape (B,2,H,W)
-        h = self.conv(x)
-        h = h.view(h.size(0), -1)
-        return self.fc(h)
+        # output shape (B, num_actions, H, W) - Q-values for each tile and action
+        return self.conv(x)
 
 # ---------------------------
 # Replay Buffer & Agent
@@ -338,17 +442,59 @@ class DQNAgent:
         self.step_count = 0
         self.target_update_steps = 400
         # epsilon schedule
-        self.eps_start, self.eps_end, self.eps_decay = 1.0, 0.05, 4000
+        self.eps_start, self.eps_end, self.eps_decay = 1.0, 0.05, 5000
 
     def act(self, obs_dict, eval_mode=False):
         # build input: 2 channels -> owner (scaled), armies (scaled)
         inp = self._obs_to_tensor(obs_dict)
+        player_id = obs_dict.get("player", 1)
+        owner = obs_dict["owner"]
+        
         if eval_mode or random.random() > self.epsilon():
             with torch.no_grad():
-                q = self.qnet(inp)
-                return int(q.argmax(1).item())
+                q = self.qnet(inp)  # Shape: (1, num_actions, H, W)
+                q = q.squeeze(0)    # Shape: (num_actions, H, W)
+                
+                # Mask out non-owned tiles
+                owned_mask = (
+                    (owner == player_id) | 
+                    (owner == player_id + CITY_OFFSET) | 
+                    (owner == player_id + GENERAL_OFFSET)
+                )
+                
+                # Set Q-values to very negative for non-owned tiles
+                for action in range(q.shape[0]):
+                    q[action][~owned_mask] = -1e9
+                
+                # Find best tile and action
+                q_flat = q.reshape(-1)
+                best_idx = int(q_flat.argmax().item())
+                
+                # Convert flat index back to (action, y, x)
+                num_actions, H, W = q.shape
+                action = best_idx // (H * W)
+                tile_idx = best_idx % (H * W)
+                tile_y = tile_idx // W
+                tile_x = tile_idx % W
+                
+                return (int(tile_y), int(tile_x), int(action))
         else:
-            return random.randint(0, NUM_ACTIONS-1)
+            # Random action from a random owned tile
+            H, W = owner.shape
+            owned_mask = (
+                (owner == player_id) | 
+                (owner == player_id + CITY_OFFSET) | 
+                (owner == player_id + GENERAL_OFFSET)
+            )
+            owned_positions = np.argwhere(owned_mask)
+            if len(owned_positions) > 0:
+                idx = random.randint(0, len(owned_positions) - 1)
+                tile_y, tile_x = owned_positions[idx]
+                action = random.randint(0, NUM_ACTIONS - 1)
+                return (int(tile_y), int(tile_x), int(action))
+            else:
+                # Fallback if no owned tiles
+                return (0, 0, 0)
 
     def epsilon(self):
         return self.eps_end + (self.eps_start - self.eps_end) * max(0, (self.eps_decay - self.step_count))/self.eps_decay
@@ -375,16 +521,36 @@ class DQNAgent:
         batch = self.replay.sample(self.batch_size)
         s_batch = torch.cat([self._obs_to_tensor(s) for s in batch.s], dim=0)
         s2_batch = torch.cat([self._obs_to_tensor(s2) for s2 in batch.s2], dim=0)
-        a_batch = torch.tensor(batch.a, dtype=torch.int64, device=self.device)
+        
+        # Convert tuple actions (y, x, direction) to flat indices
+        flat_actions = []
+        for action in batch.a:
+            if isinstance(action, tuple) and len(action) == 3:
+                y, x, direction = action
+                # Flat index: direction * (H*W) + y * W + x
+                H, W = s_batch.shape[2], s_batch.shape[3]
+                flat_idx = direction * (H * W) + y * W + x
+                flat_actions.append(flat_idx)
+            else:
+                # Old integer action format - shouldn't happen but handle it
+                flat_actions.append(action)
+        
+        a_batch = torch.tensor(flat_actions, dtype=torch.int64, device=self.device)
         r_batch = torch.tensor(batch.r, dtype=torch.float32, device=self.device)
         done_batch = torch.tensor(batch.done, dtype=torch.float32, device=self.device)
 
-        q_vals = self.qnet(s_batch)
-        q_a = q_vals.gather(1, a_batch.unsqueeze(1)).squeeze(1)
+        q_vals = self.qnet(s_batch)  # Shape: (B, num_actions, H, W)
+        B, num_actions, H, W = q_vals.shape
+        
+        # Flatten Q-values to (B, num_actions * H * W) for indexing
+        q_vals_flat = q_vals.view(B, -1)  # (B, num_actions * H * W)
+        q_a = q_vals_flat.gather(1, a_batch.unsqueeze(1)).squeeze(1)
 
         with torch.no_grad():
-            q_next = self.target(s2_batch).max(1)[0]
-            target = r_batch + self.gamma * q_next * (1.0 - done_batch)
+            q_next = self.target(s2_batch)  # (B, num_actions, H, W)
+            q_next_flat = q_next.view(B, -1)  # (B, num_actions * H * W)
+            q_next_max = q_next_flat.max(dim=1)[0]
+            target = r_batch + self.gamma * q_next_max * (1.0 - done_batch)
 
         loss = F.mse_loss(q_a, target)
         self.opt.zero_grad()
@@ -412,9 +578,27 @@ class DQNAgent:
                 armies = armies/10.0
                 stacked = np.stack([owner, armies], axis=0)
                 t = torch.tensor(stacked, dtype=torch.float32, device="cpu").unsqueeze(0)
+                
+                player_id = obs.get("player", 1)
                 with torch.no_grad():
-                    q = self.net(t)
-                    return int(q.argmax(1).item())
+                    q = self.net(t)  # (1, num_actions, H, W)
+                    q = q.squeeze(0)  # (num_actions, H, W)
+                    
+                    # Mask non-owned tiles
+                    owned_mask = (
+                        (owner == player_id) | 
+                        (owner == player_id + 100) | 
+                        (owner == player_id + 200)
+                    )
+                    for action in range(q.shape[0]):
+                        q[action][~owned_mask] = -1e9
+                    
+                    # Get best action
+                    q_flat = q.reshape(-1)
+                    best_idx = int(q_flat.argmax().item())
+                    num_actions, H, W = q.shape
+                    action = best_idx // (H * W)
+                    return int(action)
         return Opponent(state, MAP_SIZE, MAP_SIZE)
 
 # ---------------------------
@@ -471,6 +655,147 @@ def mask_fog_once(full_maps: np.ndarray, fog_token=-1, prob=0.4):
     mask = (np.random.rand(B,H,W) < prob)
     out[mask] = fog_token
     return out
+
+def mask_fog_realistic(full_map: np.ndarray, player_id: int, fog_token=-2, vision_radius=1):
+    """
+    Apply realistic fog of war for a specific player:
+    - Player can always see their own tiles (including general and cities)
+    - Player can see tiles within vision_radius of their tiles
+    - Everything else is fogged
+    
+    full_map: (H, W) array with owner values
+    player_id: which player's perspective (1 or 2)
+    fog_token: value to use for fogged tiles
+    vision_radius: how many tiles away from owned tiles can be seen
+    """
+    H, W = full_map.shape
+    partial = full_map.copy()
+    
+    # Create mask of tiles owned by this player
+    owned_mask = np.zeros((H, W), dtype=bool)
+    owned_mask |= (full_map == player_id)  # regular owned tiles
+    owned_mask |= (full_map == player_id + 100)  # owned cities
+    owned_mask |= (full_map == player_id + 200)  # owned general
+    
+    # Create vision mask: tiles within vision_radius of owned tiles
+    vision_mask = np.zeros((H, W), dtype=bool)
+    for y in range(H):
+        for x in range(W):
+            if owned_mask[y, x]:
+                # Add vision around this owned tile
+                for dy in range(-vision_radius, vision_radius + 1):
+                    for dx in range(-vision_radius, vision_radius + 1):
+                        ny, nx = y + dy, x + dx
+                        if 0 <= ny < H and 0 <= nx < W:
+                            vision_mask[ny, nx] = True
+    
+    # Fog everything outside vision
+    fog_mask = ~vision_mask
+    partial[fog_mask] = fog_token
+    
+    return partial
+
+def constrain_predictions(pred_map: np.ndarray, partial_map: np.ndarray, fog_token=-2, max_cities=8, territory_balance_tolerance=5):
+    """
+    Apply game rules to predictions:
+    1. Keep all visible tiles from partial_map (don't override known info)
+    2. Limit generals: max 1 general per player
+    3. Limit total cities to reasonable number (typical map has 2-8 cities)
+    4. Balance territory sizes: opponent territory should be within ±tolerance of player 1's territory
+    5. If we see a general in visible area, don't predict more of that general type
+    """
+    result = pred_map.copy()
+    H, W = pred_map.shape
+    
+    # Keep all visible (non-fog) tiles from partial observation
+    visible_mask = (partial_map != fog_token)
+    result[visible_mask] = partial_map[visible_mask]
+    
+    # For fogged tiles, constrain predictions
+    fog_mask = (partial_map == fog_token)
+    
+    # For each player, ensure at most 1 general total (visible + fogged)
+    for player_id in [1, 2, 3, 4]:
+        general_value = 200 + player_id
+        
+        # Check if this player's general is already visible
+        has_visible_general = (general_value in partial_map[visible_mask])
+        
+        if has_visible_general:
+            # General already visible, don't predict it in fogged area
+            result[fog_mask & (pred_map == general_value)] = player_id  # convert to regular territory
+        else:
+            # General not visible, allow at most 1 in fogged area
+            general_locs = np.argwhere(fog_mask & (result == general_value))
+            if len(general_locs) > 1:
+                # Keep only first one, convert rest to regular territory
+                for i in range(1, len(general_locs)):
+                    y, x = general_locs[i]
+                    result[y, x] = player_id
+    
+    # Constrain number of cities (neutral and captured)
+    # Count cities already visible
+    visible_cities_count = 0
+    for city_val in [100, 101, 102, 103, 104]:  # neutral and captured cities
+        visible_cities_count += np.sum(partial_map[visible_mask] == city_val)
+    
+    # Count predicted cities in fogged area
+    predicted_cities = []
+    for city_val in [100, 101, 102, 103, 104]:
+        city_locs = np.argwhere(fog_mask & (result == city_val))
+        for loc in city_locs:
+            predicted_cities.append((loc[0], loc[1]))
+    
+    # If too many cities total, keep only the first max_cities - visible_cities_count
+    max_predicted = max(0, max_cities - visible_cities_count)
+    if len(predicted_cities) > max_predicted:
+        # Remove excess cities (convert to plains)
+        for i in range(max_predicted, len(predicted_cities)):
+            y, x = predicted_cities[i]
+            result[y, x] = 0
+    
+    # Balance territory sizes between players
+    # Count player 1's territory (visible + predicted)
+    player1_tiles = np.sum((result == 1) | (result == 101) | (result == 201))
+    
+    # Count opponent territories in fogged area (player 2 in this case)
+    # Separate regular territory from generals when counting
+    opponent_tiles_fogged = []  # Regular territory only (not generals)
+    for player_id in [2, 3, 4]:  # possible opponents
+        # Regular territory
+        regular_territory_mask = (result == player_id) | (result == player_id + 100)
+        regular_locs = np.argwhere(fog_mask & regular_territory_mask)
+        for loc in regular_locs:
+            opponent_tiles_fogged.append((loc[0], loc[1], player_id))
+        
+        # Count generals separately (don't add to removable list)
+        general_mask = (result == player_id + 200)
+        general_count = np.sum(fog_mask & general_mask)
+    
+    # Count visible opponent tiles
+    visible_opponent_tiles = 0
+    for player_id in [2, 3, 4]:
+        visible_opponent_tiles += np.sum(
+            (partial_map[visible_mask] == player_id) | 
+            (partial_map[visible_mask] == player_id + 100) | 
+            (partial_map[visible_mask] == player_id + 200)
+        )
+    
+    total_opponent_tiles = visible_opponent_tiles + len(opponent_tiles_fogged)
+    
+    # If opponent has too many tiles compared to player 1, remove some
+    # But never remove generals - only remove regular territory
+    max_opponent_tiles = player1_tiles + territory_balance_tolerance
+    if total_opponent_tiles > max_opponent_tiles:
+        tiles_to_remove = total_opponent_tiles - max_opponent_tiles
+        # Remove excess opponent tiles from fogged area (convert to plains)
+        # Only removes from opponent_tiles_fogged which excludes generals
+        for i in range(min(tiles_to_remove, len(opponent_tiles_fogged))):
+            y, x, _ = opponent_tiles_fogged[i]
+            result[y, x] = 0
+    
+    return result
+
 
 # ---------------------------
 # Main training pipeline
@@ -529,37 +854,79 @@ def main():
 
     # save trained agent
     os.makedirs("models", exist_ok=True)
-    torch.save(agent.qnet.state_dict(), "models/dqn_agent.pth")
+    torch.save(agent.qnet.state_dict(), "models/dqn_agent_20x20.pth")
     print("DQN trained and saved.")
 
-    # Collect full maps dataset
+    # Collect full maps dataset from mid-game states (more interesting than early game)
     print("=== Collecting full maps for fog predictor training ===")
     collected = []
-    for _ in range(500):
+    for episode_idx in range(500):
         obs = env.reset()
         done = False
+        step_count = 0
+        # Play for a while to get interesting mid-game states
         while not done:
-            collected.append(obs["owner"].copy())  # store owner map only for predictor; optionally store armies too
             a = agent.act(obs, eval_mode=True)
             obs, r, done, _ = env.step(a, player_id=1, opponent_policy=None)
+            step_count += 1
+            # Collect states from steps 10-100 (mid-game, after some expansion)
+            if step_count >= 10 and step_count % 5 == 0:
+                collected.append(obs["owner"].copy())
+            if step_count >= 100:
+                break
+        if (episode_idx + 1) % 100 == 0:
+            print(f"  Collected {episode_idx + 1}/500 episodes...")
     collected = np.array(collected)  # shape (N,H,W)
     print("Collected maps:", collected.shape)
+    
+    # Print distribution of values in collected data
+    unique, counts = np.unique(collected, return_counts=True)
+    print("Training data distribution:")
+    for val, cnt in zip(unique, counts):
+        print(f"  Value {val}: {cnt} tiles ({100*cnt/collected.size:.2f}%)")
 
-    # Train fog predictor
-    # Include all possible values: mountains(-2), fog(-1), neutral(0), players(1,2), regular bases(11,12), castles(101,102)
-    CLASSES = [-2, -1, 0, 1, 2, 11, 12, 101, 102]  # include all possible map values
+    # Train fog predictor with class weighting
+    # Include all possible values: mountains(-1), fog(-2), plains(0), players(1,2), uncaptured city(100), cities(101,102), generals(201,202)
+    CLASSES = [-2, -1, 0, 1, 2, 100, 101, 102, 201, 202]  # include all possible map values
     predictor = FogPredictor(MAP_SIZE, MAP_SIZE, CLASSES).to(DEVICE)
     opt = optim.Adam(predictor.parameters(), lr=1e-3)
-    loss_fn = nn.CrossEntropyLoss()
+    
+    # Compute class weights to handle imbalance (inverse frequency)
+    mapping = {v: i for i, v in enumerate(CLASSES)}
+    class_counts = np.zeros(len(CLASSES))
+    for val, cnt in zip(unique, counts):
+        if val in mapping:
+            class_counts[mapping[val]] = cnt
+    class_counts = np.maximum(class_counts, 1)  # avoid division by zero
+    class_weights = 1.0 / class_counts
+    class_weights = class_weights / class_weights.sum() * len(CLASSES)  # normalize
+    class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32, device=DEVICE)
+    print(f"Class weights: {dict(zip(CLASSES, class_weights))}")
+    
+    loss_fn = nn.CrossEntropyLoss(weight=class_weights_tensor)
     BATCH = 16
     SEQ_LEN = 3
-    print("=== Training Fog Predictor (5 epochs) ===")
-    for epoch in range(5):
+    FOG_TOKEN = -2  # Use correct fog token
+    PLAYER_ID = 1  # Train from player 1's perspective
+    print("=== Training Fog Predictor (50 epochs) with realistic fog ===")
+    print("Note: Computing loss ONLY on fogged tiles (not on visible tiles)")
+    for epoch in range(50):
         total_loss = 0.0
         for step in range(50):
             idxs = np.random.randint(0, len(collected), size=BATCH)
             full = collected[idxs]  # (B,H,W)
-            seqs = [mask_fog_once(full, prob=0.4) for _ in range(SEQ_LEN)]
+            # Apply realistic fog from player 1's perspective
+            seqs = []
+            partial_batch_list = []
+            for _ in range(SEQ_LEN):
+                partial_batch = []
+                for b in range(BATCH):
+                    partial = mask_fog_realistic(full[b], player_id=PLAYER_ID, fog_token=FOG_TOKEN, vision_radius=1)
+                    partial_batch.append(partial)
+                seqs.append(np.stack(partial_batch))
+                if _ == 0:  # Save first sequence for masking
+                    partial_batch_list = partial_batch
+            
             seqs = np.stack(seqs, axis=1)  # (B,T,H,W)
             x = ints_to_onehot(seqs, CLASSES)  # (B,T,C,H,W)
             x_t = torch.tensor(x, dtype=torch.float32, device=DEVICE)
@@ -568,13 +935,33 @@ def main():
             mapping = {v:i for i,v in enumerate(CLASSES)}
             tgt = np.vectorize(lambda v: mapping[int(v)])(full)
             tgt_t = torch.tensor(tgt, dtype=torch.long, device=DEVICE)
-            loss = loss_fn(logits, tgt_t)
+            
+            # Create mask for fogged tiles only (loss computed only on these)
+            fog_mask = torch.zeros((BATCH, MAP_SIZE, MAP_SIZE), dtype=torch.bool, device=DEVICE)
+            for b in range(BATCH):
+                fog_mask[b] = torch.tensor(partial_batch_list[b] == FOG_TOKEN, device=DEVICE)
+            
+            # Compute loss only on fogged tiles
+            loss = 0.0
+            for b in range(BATCH):
+                if fog_mask[b].any():
+                    logits_fogged = logits[b][:, fog_mask[b]]  # (C, num_fogged_tiles)
+                    tgt_fogged = tgt_t[b][fog_mask[b]]  # (num_fogged_tiles,)
+                    loss += F.cross_entropy(logits_fogged.T, tgt_fogged, weight=class_weights_tensor)
+            
+            loss = loss / BATCH  # Average over batch
+            
             opt.zero_grad()
             loss.backward()
             opt.step()
             total_loss += float(loss.item())
         avg = total_loss / 50.0
-        print(f"Epoch {epoch+1}/5 - avg_loss {avg:.4f}")
+        if (epoch + 1) % 10 == 0:
+            print(f"Epoch {epoch+1}/50 - avg_loss {avg:.4f}")
+    
+    # Save fog predictor model
+    torch.save(predictor.state_dict(), "models/fog_predictor_20x20.pth")
+    print("Fog predictor trained and saved to models/fog_predictor.pth")
 
     # Evaluate under fog using predictor
     print("=== Evaluate agent under fog (3 rollouts) ===")
@@ -585,9 +972,9 @@ def main():
         print(f"--- Rollout {rollout+1} ---")
         while not done and steps < 30:
             steps += 1
-            # create partial observation (mask owner map)
+            # create partial observation with realistic fog from player 1's perspective
             owner_full = obs["owner"]
-            partial = mask_fog_once(owner_full[np.newaxis], prob=0.5)[0]  # (H,W)
+            partial = mask_fog_realistic(owner_full, player_id=1, fog_token=FOG_TOKEN, vision_radius=1)
             # create seq_len copies (simple)
             seq = np.stack([partial, partial, partial], axis=0)[None]  # (1,T,H,W)
             x = ints_to_onehot(seq, CLASSES)
@@ -597,6 +984,10 @@ def main():
                 pred_idx = logits.argmax(1).cpu().numpy()[0]
             idx2cls = {i:c for i,c in enumerate(CLASSES)}
             pred_map = np.vectorize(lambda k: idx2cls[k])(pred_idx)
+            
+            # Apply constraints to respect game rules
+            pred_map = constrain_predictions(pred_map, partial, fog_token=FOG_TOKEN)
+            
             # build predicted obs dict (we keep armies as zeros for inference; in practice you might predict armies too)
             pred_obs = {"owner": pred_map.astype(np.int32), "armies": obs["armies"].copy()}
             action = agent.act(pred_obs, eval_mode=True)
