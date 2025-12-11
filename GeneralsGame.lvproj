@@ -14,13 +14,16 @@
 		<Property Name="specify.custom.address" Type="Bool">false</Property>
 		<Item Name="client" Type="Folder">
 			<Item Name="ActionDataCluster.ctl" Type="VI" URL="../client/ActionDataCluster.ctl"/>
+			<Item Name="ClientGlobalVariables.vi" Type="VI" URL="../client/ClientGlobalVariables.vi"/>
 			<Item Name="drawsquare.vi" Type="VI" URL="../client/drawsquare.vi"/>
+			<Item Name="FieldRenderer.vi" Type="VI" URL="../client/FieldRenderer.vi"/>
 			<Item Name="pregame.vi" Type="VI" URL="../client/pregame.vi"/>
 			<Item Name="Resize.llb" Type="Document" URL="../client/Resize.llb"/>
 		</Item>
 		<Item Name="common" Type="Folder">
 			<Item Name="types" Type="Folder">
 				<Item Name="CommandCluster.ctl" Type="VI" URL="../common/types/CommandCluster.ctl"/>
+				<Item Name="FieldDataCluster.ctl" Type="VI" URL="../common/types/FieldDataCluster.ctl"/>
 				<Item Name="PlayerInfoArray.ctl" Type="VI" URL="../common/types/PlayerInfoArray.ctl"/>
 			</Item>
 			<Item Name="ClientNetworkInterface.vi" Type="VI" URL="../common/ClientNetworkInterface.vi"/>
@@ -31,6 +34,7 @@
 		</Item>
 		<Item Name="server" Type="Folder">
 			<Item Name="DataBroadcaster.vi" Type="VI" URL="../server/DataBroadcaster.vi"/>
+			<Item Name="DataSender.vi" Type="VI" URL="../server/DataSender.vi"/>
 			<Item Name="FieldBroadcaster.vi" Type="VI" URL="../server/FieldBroadcaster.vi"/>
 			<Item Name="IsValidCoordinate.vi" Type="VI" URL="../server/IsValidCoordinate.vi"/>
 			<Item Name="PlayerInfoBroadcaster.vi" Type="VI" URL="../server/PlayerInfoBroadcaster.vi"/>
@@ -40,6 +44,7 @@
 			<Item Name="ServerNetworkInterfaceGlobalVariables.vi" Type="VI" URL="../server/ServerNetworkInterfaceGlobalVariables.vi"/>
 		</Item>
 		<Item Name="tests" Type="Folder">
+			<Item Name="DrawFieldTest.vi" Type="VI" URL="../tests/DrawFieldTest.vi"/>
 			<Item Name="DrawPNGTest.vi" Type="VI" URL="../tests/DrawPNGTest.vi"/>
 			<Item Name="PlayerJoinTest.vi" Type="VI" URL="../tests/PlayerJoinTest.vi"/>
 			<Item Name="PlayerLeaveTest.vi" Type="VI" URL="../tests/PlayerLeaveTest.vi"/>
