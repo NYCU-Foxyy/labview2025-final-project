@@ -4,7 +4,6 @@ using namespace std;
 static const double M_PI = acos(-1);
 static const int MAX_TEAMS = 16;
 static const vector<pair<int, int>> steps{{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
-static const char* USAGE_STR = "mapgen <height> <width> <mountain_density> <city_density> <team_count> <team1_size> [<team2_size> ...]";
 
 size_t height;
 size_t width;
@@ -553,19 +552,21 @@ bool coord_is_valid(int r, int c) {
 }
 
 int main(int argc, char* argv[]) {
-	if (argc < 6) {
-		cerr << USAGE_STR << endl;
-		exit(EXIT_FAILURE);
-	}
 
+	cin >> height >> width >> mountain_density >> city_density >> team_count;
+/*
 	height = atoi(argv[1]);
 	width = atoi(argv[2]);
 	mountain_density = atoi(argv[3]);
 	city_density = atoi(argv[4]);
 	team_count = atoi(argv[5]);
+*/
 
 	for (int i = 0; i < team_count; i++) {
-		team_sizes.push_back(atoi(argv[6 + i]));
+//		team_sizes.push_back(atoi(argv[6 + i]));
+		int team_size;
+		cin >> team_size;
+		team_sizes.push_back(team_size);
 	}
 
 	generate();

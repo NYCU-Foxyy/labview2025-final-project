@@ -45,6 +45,7 @@
 			<Item Name="SetOptionTest.vi" Type="VI" URL="../tests/SetOptionTest.vi"/>
 			<Item Name="SetReadyTest.vi" Type="VI" URL="../tests/SetReadyTest.vi"/>
 			<Item Name="SetTeamTest.vi" Type="VI" URL="../tests/SetTeamTest.vi"/>
+			<Item Name="SystemExecTest.vi" Type="VI" URL="../tests/SystemExecTest.vi"/>
 		</Item>
 		<Item Name="Dependencies" Type="Dependencies"/>
 		<Item Name="Build Specifications" Type="Build"/>
