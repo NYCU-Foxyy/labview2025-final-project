@@ -29,7 +29,7 @@
 		</Item>
 		<Item Name="Dependencies" Type="Dependencies"/>
 		<Item Name="Build Specifications" Type="Build">
-			<Item Name="pregame" Type="EXE">
+			<Item Name="Client" Type="EXE">
 				<Property Name="App_copyErrors" Type="Bool">true</Property>
 				<Property Name="App_INI_aliasGUID" Type="Str">{85B8DC98-F4D0-44E8-8D6C-3CAD9B89F6A2}</Property>
 				<Property Name="App_INI_GUID" Type="Str">{ED274362-25EB-4BC6-853C-AE7897720B52}</Property>
@@ -37,7 +37,7 @@
 				<Property Name="App_serverType" Type="Int">0</Property>
 				<Property Name="Bld_autoIncrement" Type="Bool">true</Property>
 				<Property Name="Bld_buildCacheID" Type="Str">{6C1E67EA-EA36-4AA8-843A-E26CAC68FA3D}</Property>
-				<Property Name="Bld_buildSpecName" Type="Str">pregame</Property>
+				<Property Name="Bld_buildSpecName" Type="Str">Client</Property>
 				<Property Name="Bld_excludeInlineSubVIs" Type="Bool">true</Property>
 				<Property Name="Bld_excludeLibraryItems" Type="Bool">true</Property>
 				<Property Name="Bld_excludePolymorphicVIs" Type="Bool">true</Property>
@@ -64,10 +64,10 @@
 				<Property Name="Source[1].type" Type="Str">VI</Property>
 				<Property Name="SourceCount" Type="Int">2</Property>
 				<Property Name="TgtF_companyName" Type="Str">?立?明交通大?</Property>
-				<Property Name="TgtF_fileDescription" Type="Str">pregame</Property>
-				<Property Name="TgtF_internalName" Type="Str">pregame</Property>
+				<Property Name="TgtF_fileDescription" Type="Str">Client</Property>
+				<Property Name="TgtF_internalName" Type="Str">Client</Property>
 				<Property Name="TgtF_legalCopyright" Type="Str">Copyright ?2025 ?立?明交通大?</Property>
-				<Property Name="TgtF_productName" Type="Str">pregame</Property>
+				<Property Name="TgtF_productName" Type="Str">Client</Property>
 				<Property Name="TgtF_targetfileGUID" Type="Str">{F165726A-6843-4AC4-B16E-6D4E151F217A}</Property>
 				<Property Name="TgtF_targetfileName" Type="Str">Client.exe</Property>
 				<Property Name="TgtF_versionIndependent" Type="Bool">true</Property>
