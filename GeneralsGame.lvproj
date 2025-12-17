@@ -18,7 +18,6 @@
 			<Item Name="drawsquare.vi" Type="VI" URL="../client/drawsquare.vi"/>
 			<Item Name="FieldRenderer.vi" Type="VI" URL="../client/FieldRenderer.vi"/>
 			<Item Name="pregame.vi" Type="VI" URL="../client/pregame.vi"/>
-			<Item Name="Resize.llb" Type="Document" URL="../client/Resize.llb"/>
 		</Item>
 		<Item Name="common" Type="Folder">
 			<Item Name="types" Type="Folder">
