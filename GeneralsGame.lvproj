@@ -12,47 +12,66 @@
 		<Property Name="server.vi.callsEnabled" Type="Bool">true</Property>
 		<Property Name="server.vi.propertiesEnabled" Type="Bool">true</Property>
 		<Property Name="specify.custom.address" Type="Bool">false</Property>
-		<Item Name="client" Type="Folder">
-			<Item Name="ActionDataCluster.ctl" Type="VI" URL="../client/ActionDataCluster.ctl"/>
-			<Item Name="ClientGlobalVariables.vi" Type="VI" URL="../client/ClientGlobalVariables.vi"/>
-			<Item Name="drawsquare.vi" Type="VI" URL="../client/drawsquare.vi"/>
-			<Item Name="FieldRenderer.vi" Type="VI" URL="../client/FieldRenderer.vi"/>
-			<Item Name="pregame.vi" Type="VI" URL="../client/pregame.vi"/>
+		<Item Name="client" Type="Folder" URL="../client">
+			<Property Name="NI.DISK" Type="Bool">true</Property>
 		</Item>
-		<Item Name="common" Type="Folder">
-			<Item Name="types" Type="Folder">
-				<Item Name="CommandCluster.ctl" Type="VI" URL="../common/types/CommandCluster.ctl"/>
-				<Item Name="FieldDataCluster.ctl" Type="VI" URL="../common/types/FieldDataCluster.ctl"/>
-				<Item Name="PlayerInfoArray.ctl" Type="VI" URL="../common/types/PlayerInfoArray.ctl"/>
-			</Item>
-			<Item Name="ClientNetworkInterface.vi" Type="VI" URL="../common/ClientNetworkInterface.vi"/>
-			<Item Name="ClientNetworkInterfaceGlobalVariables.vi" Type="VI" URL="../common/ClientNetworkInterfaceGlobalVariables.vi"/>
+		<Item Name="common" Type="Folder" URL="../common">
+			<Property Name="NI.DISK" Type="Bool">true</Property>
 		</Item>
 		<Item Name="img" Type="Folder" URL="../img">
 			<Property Name="NI.DISK" Type="Bool">true</Property>
 		</Item>
-		<Item Name="server" Type="Folder">
-			<Item Name="DataBroadcaster.vi" Type="VI" URL="../server/DataBroadcaster.vi"/>
-			<Item Name="DataSender.vi" Type="VI" URL="../server/DataSender.vi"/>
-			<Item Name="FieldBroadcaster.vi" Type="VI" URL="../server/FieldBroadcaster.vi"/>
-			<Item Name="IsValidCoordinate.vi" Type="VI" URL="../server/IsValidCoordinate.vi"/>
-			<Item Name="PlayerInfoBroadcaster.vi" Type="VI" URL="../server/PlayerInfoBroadcaster.vi"/>
-			<Item Name="Server.vi" Type="VI" URL="../server/Server.vi"/>
-			<Item Name="ServerGlobalVariables.vi" Type="VI" URL="../server/ServerGlobalVariables.vi"/>
-			<Item Name="ServerNetworkInterface.vi" Type="VI" URL="../server/ServerNetworkInterface.vi"/>
-			<Item Name="ServerNetworkInterfaceGlobalVariables.vi" Type="VI" URL="../server/ServerNetworkInterfaceGlobalVariables.vi"/>
+		<Item Name="server" Type="Folder" URL="../server">
+			<Property Name="NI.DISK" Type="Bool">true</Property>
 		</Item>
-		<Item Name="tests" Type="Folder">
-			<Item Name="DrawFieldTest.vi" Type="VI" URL="../tests/DrawFieldTest.vi"/>
-			<Item Name="DrawPNGTest.vi" Type="VI" URL="../tests/DrawPNGTest.vi"/>
-			<Item Name="PlayerJoinTest.vi" Type="VI" URL="../tests/PlayerJoinTest.vi"/>
-			<Item Name="PlayerLeaveTest.vi" Type="VI" URL="../tests/PlayerLeaveTest.vi"/>
-			<Item Name="SetOptionTest.vi" Type="VI" URL="../tests/SetOptionTest.vi"/>
-			<Item Name="SetReadyTest.vi" Type="VI" URL="../tests/SetReadyTest.vi"/>
-			<Item Name="SetTeamTest.vi" Type="VI" URL="../tests/SetTeamTest.vi"/>
-			<Item Name="SystemExecTest.vi" Type="VI" URL="../tests/SystemExecTest.vi"/>
+		<Item Name="tests" Type="Folder" URL="../tests">
+			<Property Name="NI.DISK" Type="Bool">true</Property>
 		</Item>
 		<Item Name="Dependencies" Type="Dependencies"/>
-		<Item Name="Build Specifications" Type="Build"/>
+		<Item Name="Build Specifications" Type="Build">
+			<Item Name="pregame" Type="EXE">
+				<Property Name="App_copyErrors" Type="Bool">true</Property>
+				<Property Name="App_INI_aliasGUID" Type="Str">{85B8DC98-F4D0-44E8-8D6C-3CAD9B89F6A2}</Property>
+				<Property Name="App_INI_GUID" Type="Str">{ED274362-25EB-4BC6-853C-AE7897720B52}</Property>
+				<Property Name="App_serverConfig.httpPort" Type="Int">8002</Property>
+				<Property Name="App_serverType" Type="Int">0</Property>
+				<Property Name="Bld_autoIncrement" Type="Bool">true</Property>
+				<Property Name="Bld_buildCacheID" Type="Str">{6C1E67EA-EA36-4AA8-843A-E26CAC68FA3D}</Property>
+				<Property Name="Bld_buildSpecName" Type="Str">pregame</Property>
+				<Property Name="Bld_excludeInlineSubVIs" Type="Bool">true</Property>
+				<Property Name="Bld_excludeLibraryItems" Type="Bool">true</Property>
+				<Property Name="Bld_excludePolymorphicVIs" Type="Bool">true</Property>
+				<Property Name="Bld_localDestDir" Type="Path">../builds</Property>
+				<Property Name="Bld_localDestDirType" Type="Str">relativeToProject</Property>
+				<Property Name="Bld_modifyLibraryFile" Type="Bool">true</Property>
+				<Property Name="Bld_previewCacheID" Type="Str">{0D774F28-4CE1-4F77-BB4B-5E5FC0B67CAF}</Property>
+				<Property Name="Bld_version.build" Type="Int">1</Property>
+				<Property Name="Bld_version.major" Type="Int">1</Property>
+				<Property Name="Destination[0].destName" Type="Str">Client.exe</Property>
+				<Property Name="Destination[0].path" Type="Path">../builds/Client.exe</Property>
+				<Property Name="Destination[0].path.type" Type="Str">relativeToProject</Property>
+				<Property Name="Destination[0].preserveHierarchy" Type="Bool">true</Property>
+				<Property Name="Destination[0].type" Type="Str">App</Property>
+				<Property Name="Destination[1].destName" Type="Str">Support Directory</Property>
+				<Property Name="Destination[1].path" Type="Path">../builds/data</Property>
+				<Property Name="Destination[1].path.type" Type="Str">relativeToProject</Property>
+				<Property Name="DestinationCount" Type="Int">2</Property>
+				<Property Name="Source[0].itemID" Type="Str">{D0D18AF7-0DD8-4868-A26A-17BE28551AFB}</Property>
+				<Property Name="Source[0].type" Type="Str">Container</Property>
+				<Property Name="Source[1].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[1].itemID" Type="Ref">/My Computer/client/pregame.vi</Property>
+				<Property Name="Source[1].sourceInclusion" Type="Str">TopLevel</Property>
+				<Property Name="Source[1].type" Type="Str">VI</Property>
+				<Property Name="SourceCount" Type="Int">2</Property>
+				<Property Name="TgtF_companyName" Type="Str">?立?明交通大?</Property>
+				<Property Name="TgtF_fileDescription" Type="Str">pregame</Property>
+				<Property Name="TgtF_internalName" Type="Str">pregame</Property>
+				<Property Name="TgtF_legalCopyright" Type="Str">Copyright ?2025 ?立?明交通大?</Property>
+				<Property Name="TgtF_productName" Type="Str">pregame</Property>
+				<Property Name="TgtF_targetfileGUID" Type="Str">{F165726A-6843-4AC4-B16E-6D4E151F217A}</Property>
+				<Property Name="TgtF_targetfileName" Type="Str">Client.exe</Property>
+				<Property Name="TgtF_versionIndependent" Type="Bool">true</Property>
+			</Item>
+		</Item>
 	</Item>
 </Project>
