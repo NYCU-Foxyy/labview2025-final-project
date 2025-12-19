@@ -12,6 +12,31 @@
 		<Property Name="server.vi.callsEnabled" Type="Bool">true</Property>
 		<Property Name="server.vi.propertiesEnabled" Type="Bool">true</Property>
 		<Property Name="specify.custom.address" Type="Bool">false</Property>
+		<Item Name="ai-client" Type="Folder">
+			<Item Name="models" Type="Folder">
+				<Item Name="dqn_agent_20x20.onnx" Type="Document" URL="../ai-client/models/dqn_agent_20x20.onnx"/>
+				<Item Name="dqn_agent_20x20.onnx.data" Type="Document" URL="../ai-client/models/dqn_agent_20x20.onnx.data"/>
+				<Item Name="dqn_agent_20x20.pth" Type="Document" URL="../ai-client/models/dqn_agent_20x20.pth"/>
+				<Item Name="fog_predictor_20x20.onnx" Type="Document" URL="../ai-client/models/fog_predictor_20x20.onnx"/>
+				<Item Name="fog_predictor_20x20.onnx.data" Type="Document" URL="../ai-client/models/fog_predictor_20x20.onnx.data"/>
+				<Item Name="fog_predictor_20x20.pth" Type="Document" URL="../ai-client/models/fog_predictor_20x20.pth"/>
+			</Item>
+			<Item Name=".gitignore" Type="Document" URL="../ai-client/.gitignore"/>
+			<Item Name="AIClient.vi" Type="VI" URL="../ai-client/AIClient.vi"/>
+			<Item Name="AIGlobal.vi" Type="VI" URL="../ai-client/AIGlobal.vi"/>
+			<Item Name="AIGlobalqueue.vi" Type="VI" URL="../ai-client/AIGlobalqueue.vi"/>
+			<Item Name="AINetworkInterface.vi" Type="VI" URL="../ai-client/AINetworkInterface.vi"/>
+			<Item Name="AIRequest.ctl" Type="VI" URL="../ai-client/AIRequest.ctl"/>
+			<Item Name="convert_to_onnx.py" Type="Document" URL="../ai-client/convert_to_onnx.py"/>
+			<Item Name="dqn_agent_10x10.pth" Type="Document" URL="../ai-client/dqn_agent_10x10.pth"/>
+			<Item Name="dqn_agent_40x40.pth" Type="Document" URL="../ai-client/dqn_agent_40x40.pth"/>
+			<Item Name="FieldUpdate.ctl" Type="VI" URL="../ai-client/FieldUpdate.ctl"/>
+			<Item Name="fog_predictor_10x10.pth" Type="Document" URL="../ai-client/fog_predictor_10x10.pth"/>
+			<Item Name="labview_api.py" Type="Document" URL="../ai-client/labview_api.py"/>
+			<Item Name="labview_api_onnx.py" Type="Document" URL="../ai-client/labview_api_onnx.py"/>
+			<Item Name="models.py" Type="Document" URL="../ai-client/models.py"/>
+			<Item Name="Operation.ctl" Type="VI" URL="../ai-client/Operation.ctl"/>
+		</Item>
 		<Item Name="client" Type="Folder" URL="../client">
 			<Property Name="NI.DISK" Type="Bool">true</Property>
 		</Item>
