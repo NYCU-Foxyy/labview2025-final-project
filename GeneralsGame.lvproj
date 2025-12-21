@@ -12,9 +12,7 @@
 		<Property Name="server.vi.callsEnabled" Type="Bool">true</Property>
 		<Property Name="server.vi.propertiesEnabled" Type="Bool">true</Property>
 		<Property Name="specify.custom.address" Type="Bool">false</Property>
-		<Item Name="builds" Type="Folder" URL="../builds">
-			<Property Name="NI.DISK" Type="Bool">true</Property>
-		</Item>
+		<Item Name="builds" Type="Folder"/>
 		<Item Name="client" Type="Folder" URL="../client">
 			<Property Name="NI.DISK" Type="Bool">true</Property>
 		</Item>
